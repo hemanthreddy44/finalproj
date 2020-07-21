@@ -24,26 +24,58 @@ pipeline {
                   }
               }
          }
-         stage('Deploying') {
-              steps{
-                  echo 'Deploying to AWS...'
-                  withAWS(credentials: 'aws', region: 'us-west-2') {
-                      sh "aws eks --region us-west-2 update-kubeconfig --name capstone"
-                      sh "kubectl config use-context arn:aws:eks:us-west-2:904158542353:cluster/capstone"
-                      sh "kubectl set image deployments/capstone-project-cloud-devops capstone-project-cloud-devops=hemanthhr/capstone-project-cloud-devops:latest"
-                      sh "kubectl apply -f deployment/deployment.yml"
-                      sh "kubectl get nodes"
-                      sh "kubectl get deployment"
-                      sh "kubectl get pod -o wide"
-                      sh "kubectl get service/capstone-project-cloud-devops"
-                  }
-              }
+ stage('Set current kubectl context') {
+                        steps {
+                        withAWS(region: 'us-west-2', credentials: 'aws') {
+                                sh '''
+                    aws eks update-kubeconfig --name capstone-cluster
+                                        kubectl config use-context arn:aws:eks:us-west-2:904158542353:cluster/capstone
+                                '''
+                        }
+                        }
+                }
+                stage('Deploying blue container') {
+            steps {
+                        withAWS(region: 'us-west-2', credentials: 'aws') {
+                                sh '''
+                                        kubectl apply -f ./blue-controller.json
+                                '''
+                                }
+            }
         }
-        stage("Cleaning up") {
-              steps{
-                    echo 'Cleaning up....'
-                    sh "docker system prune"
-              }
+
+        stage('Deploying green container') {
+            steps {
+                        withAWS(region: 'us-west-2', credentials: 'aws') {
+                                sh '''
+                                        kubectl apply -f ./green-controller.json
+                                '''
+                        }
+            }
+        }
+
+        stage('Running services for blue') {
+            steps {
+                        withAWS(region: 'us-west-2', credentials: 'aws') {
+                                sh '''
+                                        kubectl apply -f ./blue-service.json
+                                '''
+                        }
+            }
+        }
+    
+        stage('Running service for green') {
+            steps {
+                        withAWS(region: 'us-west-2', credentials: 'aws') {
+                                sh '''
+                                        kubectl apply -f ./green-service.json
+                                '''
+                        }
+            }
+        }
+        }
+}
+
         }
      }
 }
