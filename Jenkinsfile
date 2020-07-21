@@ -24,7 +24,7 @@ pipeline {
                   }
               }
          }
- stage('Set current kubectl context') {
+        stage('Set current kubectl context') {
                         steps {
                         withAWS(region: 'us-west-2', credentials: 'aws') {
                                 sh '''
@@ -34,7 +34,7 @@ pipeline {
                         }
                         }
                 }
-                stage('Deploying blue container') {
+        stage('Deploying blue container') {
             steps {
                         withAWS(region: 'us-west-2', credentials: 'aws') {
                                 sh '''
@@ -71,11 +71,10 @@ pipeline {
                                         kubectl apply -f ./green-service.json
                                 '''
                         }
-            }
-        }
+                  }
+             }
         }
 }
 
         
-     }
-}
+ 
